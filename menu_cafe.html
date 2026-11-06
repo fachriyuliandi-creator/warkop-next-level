@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nightfall Cafe & Lounge - Multi Order & Pembayaran</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #0b0f19; color: #f8fafc; margin: 0; padding: 20px; padding-bottom: 130px; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h1 { color: #38bdf8; font-size: 32px; margin-bottom: 5px; }
+        .header p { color: #94a3b8; font-size: 14px; }
+
+        .customer-info-card {
+            max-width: 1200px;
+            margin: 0 auto 20px auto;
+            background-color: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 15px 20px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+            min-width: 220px;
+        }
+        .form-group label {
+            font-size: 13px;
+            color: #38bdf8;
+            font-weight: bold;
+        }
+        .form-group input {
+            background-color: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            padding: 8px 12px;
+            color: #f8fafc;
+            font-size: 14px;
+            outline: none;
+        }
+        .form-group input:focus { border-color: #38bdf8; }
+        
+        /* Grid Container yang Memastikan Tampilan Kotak-Kotak Rapi */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .card {
+            background-color: #1e293b;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid #334155;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.4);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .card-img { 
+            width: 100%; 
+            height: 160px; 
+            object-fit: cover; /* Agar gambar tidak gepeng */
+        }
+        .card-content { padding: 16px; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
+        .card h3 { margin: 0 0 6px 0; color: #f1f5f9; font-size: 18px; }
+        .badge {
+            display: inline-block; background-color: #0284c7; color: #fff;
+            padding: 3px 8px; border-radius: 999px; font-size: 10px; font-weight: bold;
+            margin-bottom: 10px; text-transform: uppercase;
+        }
+        .desc { color: #94a3b8; font-size: 12px; line-height: 1.3; margin-bottom: 12px; }
+        .price-row { display: flex; align-items: center; justify-content: space-between; margin-top: auto; }
+        .price { font-weight: bold; color: #4ade80; font-size: 16px; }
+        
+        .action-btns { display: flex; gap: 8px; align-items: center; }
+        .btn-add {
+            background-color: #38bdf8; color: #0f172a; border: none; padding: 6px 10px;
+            border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px;
+        }
+        .btn-minus {
+            background-color: #ef4444; color: #fff; border: none; padding: 6px 10px;
+            border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px;
+        }
+        .qty-badge { font-weight: bold; color: #f8fafc; font-size: 14px; min-width: 18px; text-align: center; }
+
+        .cart-bar {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background-color: #1e293b; border-top: 1px solid #334155;
+            padding: 12px 25px; display: flex; justify-content: space-between;
+            align-items: center; box-shadow: 0 -5px 15px rgba(0,0,0,0.5); z-index: 999;
+        }
+        .cart-info { font-size: 15px; color: #f1f5f9; }
+        .cart-total { color: #4ade80; font-weight: bold; font-size: 18px; margin-left: 8px; }
+        .btn-checkout {
+            background-color: #22c55e; color: #fff; border: none; padding: 10px 20px;
+            border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer;
+        }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.75); display: none;
+            justify-content: center; align-items: center; z-index: 1000;
+        }
+        .modal-box {
+            background-color: #1e293b; border: 1px solid #334155; border-radius: 16px;
+            padding: 25px; width: 90%; max-width: 480px; box-shadow: 0 20px 25px rgba(0,0,0,0.5);
+            max-height: 90vh; overflow-y: auto;
+        }
+        .modal-box h2 { margin-top: 0; color: #38bdf8; border-bottom: 1px solid #334155; padding-bottom: 10px; }
+        .customer-summary { background: #0f172a; padding: 10px 12px; border-radius: 8px; margin-bottom: 12px; font-size: 13px; }
+        .cart-list { margin: 15px 0; max-height: 180px; overflow-y: auto; }
+        .cart-item {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 8px; font-size: 13px; color: #cbd5e1;
+            background: #0f172a; padding: 6px 10px; border-radius: 6px;
+        }
+        .btn-delete {
+            background-color: #ef4444; color: #fff; border: none;
+            padding: 3px 6px; border-radius: 4px; cursor: pointer; font-size: 10px; font-weight: bold;
+        }
+        .payment-methods label { display: block; margin-bottom: 6px; cursor: pointer; color: #cbd5e1; font-size: 13px; }
+        .btn-confirm {
+            background-color: #22c55e; color: #fff; width: 100%; padding: 10px;
+            border: none; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; margin-top: 12px;
+        }
+        .btn-cancel {
+            background-color: transparent; color: #94a3b8; width: 100%; padding: 6px;
+            border: none; cursor: pointer; margin-top: 4px; font-size: 13px;
+        }
+
+        /* Desain Struk Termal Kasir */
+        #receipt-area {
+            display: none;
+            background: #fff;
+            color: #000;
+            padding: 15px;
+            width: 58mm;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 12px;
+        }
+        .receipt-header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 8px; margin-bottom: 8px; }
+        .receipt-header h3 { margin: 0; font-size: 14px; }
+        .receipt-header p { margin: 2px 0 0 0; font-size: 10px; }
+        .receipt-info { border-bottom: 1px dashed #000; padding-bottom: 6px; margin-bottom: 6px; font-size: 11px; }
+        .receipt-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; font-size: 11px; }
+        .receipt-table td { padding: 2px 0; }
+        .receipt-total { border-top: 1px dashed #000; padding-top: 6px; font-weight: bold; font-size: 11px; }
+        .receipt-footer { text-align: center; margin-top: 12px; border-top: 1px dashed #000; padding-top: 6px; font-size: 10px; }
+
+        @media print {
+            body * { visibility: hidden; }
+            #receipt-area, #receipt-area * { visibility: visible; }
+            #receipt-area {
+                display: block !important;
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Nightfall Cafe & Lounge</h1>
+        <p>Pilih menu favoritmu, atur jumlahnya, dan bayar sekaligus</p>
+    </div>
+
+    <div class="customer-info-card">
+        <div class="form-group">
+            <label for="customer-name">Nama Pemesan</label>
+            <input type="text" id="customer-name" placeholder="Masukkan nama Anda...">
+        </div>
+        <div class="form-group">
+            <label for="table-number">Nomor Meja</label>
+            <input type="number" id="table-number" placeholder="Contoh: 12">
+        </div>
+    </div>
+
+    <div class="grid-container" id="menu-container"></div>
+
+    <div class="cart-bar">
+        <div class="cart-info">
+            Total Item: <span id="cart-count" style="font-weight: bold; color: #38bdf8;">0</span> | Total Harga: <span class="cart-total" id="cart-total-price">Rp 0</span>
+        </div>
+        <button class="btn-checkout" onclick="bukaModal()">Lanjut Pembayaran</button>
+    </div>
+
+    <div class="modal-overlay" id="payment-modal">
+        <div class="modal-box">
+            <h2>Ringkasan Pesanan</h2>
+            <div class="customer-summary" id="modal-customer-info"></div>
+            <div class="cart-list" id="modal-cart-list"></div>
+            <hr style="border-color: #334155; margin: 12px 0;">
+            <div style="display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 12px; font-size: 14px;">
+                <span>Total Bayar:</span>
+                <span id="modal-total-price" style="color: #4ade80;">Rp 0</span>
+            </div>
+            <div class="payment-methods">
+                <p style="margin-bottom: 6px; color: #94a3b8; font-size: 12px;">Pilih Metode Pembayaran:</p>
+                <label><input type="radio" name="payment" value="QRIS" checked> QRIS / E-Wallet</label>
+                <label><input type="radio" name="payment" value="Tunai"> Tunai di Kasir</label>
+                <label><input type="radio" name="payment" value="Kartu Debit/Kredit"> Kartu Debit / Kredit</label>
+            </div>
+            <button class="btn-confirm" onclick="konfirmasiBayar()">Konfirmasi & Cetak Struk</button>
+            <button class="btn-cancel" onclick="tutupModal()">Tutup / Tambah Menu</button>
+        </div>
+    </div>
+
+    <div id="receipt-area">
+        <div class="receipt-header">
+            <h3>NIGHTFALL CAFE</h3>
+            <p>Jl. Margahayu No. 8, Bekasi</p>
+        </div>
+        <div class="receipt-info" id="receipt-info"></div>
+        <table class="receipt-table" id="receipt-items"></table>
+        <div class="receipt-total" id="receipt-total"></div>
+        <div class="receipt-footer">
+            <p>Terima Kasih atas Kunjungan Anda!</p>
+            <p>-- Selamat Menikmati --</p>
+        </div>
+    </div>
+
+    <script>
+       const menuKafe = [
+            { id: 1, nama: "Espresso Single Shot", kategori: "Coffee", harga: 20000, deskripsi: "Ekstraksi kopi murni bertubuh tebal.", gambar: "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?auto=format&fit=crop&w=500&q=80" },
+            { id: 2, nama: "Caffè Latte", kategori: "Coffee", harga: 30000, deskripsi: "Perpaduan espresso kaya rasa dengan steamed milk.", gambar: "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?auto=format&fit=crop&w=500&q=80" },
+            { id: 3, nama: "Matcha Oat Latte", kategori: "Non-Coffee", harga: 32000, deskripsi: "Matcha Uji dipadu susu gandum manis alami.", gambar: "https://images.unsplash.com/photo-1536256263959-770b48d82b0a?auto=format&fit=crop&w=500&q=80" },
+            { id: 4, nama: "Sparkling Berry Mocktail", kategori: "Mocktail", harga: 35000, deskripsi: "Sirup raspberry, jus lemon, dan soda dingin.", gambar: "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=500&q=80" },
+            { id: 5, nama: "Classic Chocolate Iced", kategori: "Non-Coffee", harga: 28000, deskripsi: "Cokelat dark belgia dengan milk foam lembut.", gambar: "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=500&q=80" },
+            { id: 6, nama: "Caramel Macchiato", kategori: "Coffee", harga: 34000, deskripsi: "Espresso segar dengan vanila dan saus karamel.", gambar: "https://images.unsplash.com/photo-1572442388796-11668a67e53d?auto=format&fit=crop&w=500&q=80" },
+            { id: 7, nama: "Nasi Goreng Special", kategori: "Main Course", harga: 40000, deskripsi: "Nasi goreng rempah khas kafe disajikan telur dan sate.", gambar: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=500&q=80" },
+            { id: 8, nama: "Spaghetti Carbonara", kategori: "Main Course", harga: 45000, deskripsi: "Pasta Italia dengan saus keju creamy dan smoked beef.", gambar: "https://images.unsplash.com/photo-1612874742237-6526221588e3?auto=format&fit=crop&w=500&q=80" },
+            { id: 9, nama: "Chicken Wings BBQ", kategori: "Snack", harga: 30000, deskripsi: "Sayap ayam renyah berbalut saus barbekyu manis pedas.", gambar: "https://images.unsplash.com/photo-1527477396000-e27163b481c2?auto=format&fit=crop&w=500&q=80" },
+            { id: 10, nama: "French Fries Truffle", kategori: "Snack", harga: 25000, deskripsi: "Kentang goreng emas dengan minyak truffle dan keju.", gambar: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=500&q=80" },
+            { id: 11, nama: "Lychee Tea Ice", kategori: "Non-Coffee", harga: 26000, deskripsi: "Teh melati segar dengan buah lychee utuh pilihan.", gambar: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=500&q=80" },
+            { id: 12, nama: "Beef Burger Deluxe", kategori: "Main Course", harga: 48000, deskripsi: "Burger daging sapi tebal dengan keju leleh dan sayuran segar.", gambar: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=500&q=80" },
+            { id: 13, nama: "Croissant Butter", kategori: "Snack", harga: 22000, deskripsi: "Roti croissant panggang renyah dengan aroma mentega.", gambar: "https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=500&q=80" },
+            { id: 14, nama: "Cheesecake Slice", kategori: "Dessert", harga: 32000, deskripsi: "Kue keju lembut dengan tambahan selai stroberi di atasnya.", gambar: "https://images.unsplash.com/photo-1533134242443-d4fd215305ad?auto=format&fit=crop&w=500&q=80" },
+            { id: 15, nama: "Es Kopi Susu Kampung", kategori: "Coffee", harga: 18000, deskripsi: "Kopi robusta lokal dipadu susu kental manis dan gula aren asli.", gambar: "https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?auto=format&fit=crop&w=500&q=80" },
+            { id: 16, nama: "Soda Gembira Klasik", kategori: "Mocktail", harga: 22000, deskripsi: "Air soda segar dengan sirup merah manis dan kental manis creamy.", gambar: "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=500&q=80" },
+            { id: 17, nama: "Indomie Rebus / Goreng Telur Kornet", kategori: "Main Course", harga: 23000, deskripsi: "Mi instan pilihan disajikan lengkap dengan telur dan suwiran kornet gurih.", gambar: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=500&q=80" },
+            { id: 18, nama: "Indomie Dok-Dok Spesial", kategori: "Main Course", harga: 25000, deskripsi: "Mi instan berkuah kental rich kaldu, sayuran, telur, dan potongan cabai rawit.", gambar: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=500&q=80" },
+            { id: 19, nama: "Indomie Goreng / Rebus Biasa", kategori: "Main Course", harga: 15000, deskripsi: "Mi instan andalan dengan racikan bumbu khas warkop yang nikmat.", gambar: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=500&q=80" },
+            { id: 20, nama: "Roti Bakar Cokelat Keju Biasa", kategori: "Snack", harga: 15000, deskripsi: "Roti panggang dengan olesan mentega, taburan meses cokelat, dan keju.", gambar: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=500&q=80" },
+            { id: 21, nama: "Roti Bakar Premium Cokelat Keju", kategori: "Snack", harga: 22000, deskripsi: "Roti tebal panggang mentega dengan lumeran cokelat belgian dan keju parut.", gambar: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=500&q=80" },
+            { id: 22, nama: "Bakso Bakar Jumbo (3 Pcs)", kategori: "Snack", harga: 20000, deskripsi: "Bakso sapi pilihan dibakar dengan olesan saus bumbu rahasia pedas manis.", gambar: "https://images.unsplash.com/photo-1527477396000-e27163b481c2?auto=format&fit=crop&w=500&q=80" },
+            { id: 23, nama: "Nightfall Mix Platter", kategori: "Snack", harga: 45000, deskripsi: "Kombinasi kentang goreng, sosis jumbo, nugget, dan onion rings renyah.", gambar: "https://images.unsplash.com/photo-1541592106381-b31e9677c0e5?auto=format&fit=crop&w=500&q=80" },
+            { id: 24, nama: "Es Teh Manis / Tawar", kategori: "Non-Coffee", harga: 5000, deskripsi: "Teh melati segar disajikan dingin atau hangat pelepas dahaga.", gambar: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=500&q=80" },
+            { id: 25, nama: "Es Jeruk Peras Segar", kategori: "Non-Coffee", harga: 8000, deskripsi: "Perasan buah jeruk murni kaya vitamin C dengan es batu segar.", gambar: "https://images.unsplash.com/photo-1613478223719-2ab802602423?auto=format&fit=crop&w=500&q=80" },
+            { id: 26, nama: "Pisang Goreng Crispy (4 Pcs)", kategori: "Snack", harga: 12000, deskripsi: "Pisang manis berbalut tepung renyah dengan taburan keju dan kental manis.", gambar: "https://images.unsplash.com/photo-1543253687-c931c8e01820?auto=format&fit=crop&w=500&q=80" },
+            { id: 27, nama: "Kentang Goreng Original", kategori: "Snack", harga: 15000, deskripsi: "French fries klasik yang gurih renyah pas untuk teman nongkrong.", gambar: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=500&q=80" },
+            { id: 28, nama: "Sosis Bakar Jumbo Mercon", kategori: "Snack", harga: 15000, deskripsi: "Sosis sapi ukuran jumbo dibakar dengan olesan saus pedas menantang.", gambar: "https://images.unsplash.com/photo-1527477396000-e27163b481c2?auto=format&fit=crop&w=500&q=80" },
+            { id: 29, nama: "Nasi Telur Dadar Madura", kategori: "Main Course", harga: 12000, deskripsi: "Nasi hangat dengan telur dadar rempah gurih khas bumbu hitam mercon.", gambar: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=500&q=80" },
+            { id: 30, nama: "Bubur Kacang Ijo Ketan Hitam", kategori: "Dessert", harga: 15000, deskripsi: "Kacang hijau dan ketan hitam legit berkuah santan kental manis hangat.", gambar: "https://images.unsplash.com/photo-1533134242443-d4fd215305ad?auto=format&fit=crop&w=500&q=80" }
+        ];
+        
+
+        let keranjang = {};
+        const container = document.getElementById('menu-container');
+
+        function renderMenu() {
+            container.innerHTML = '';
+            menuKafe.forEach(item => {
+                const qty = keranjang[item.id] || 0;
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <img src="${item.gambar}" alt="${item.nama}" class="card-img">
+                    <div class="card-content">
+                        <div>
+                            <span class="badge">${item.kategori}</span>
+                            <h3>${item.nama}</h3>
+                            <p class="desc">${item.deskripsi}</p>
+                        </div>
+                        <div class="price-row">
+                            <div class="price">Rp ${item.harga.toLocaleString('id-ID')}</div>
+                            <div class="action-btns">
+                                <button class="btn-minus" onclick="kurangItem(${item.id})">-</button>
+                                <span class="qty-badge">${qty}</span>
+                                <button class="btn-add" onclick="tambahItem(${item.id})">+</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            updateBarKeranjang();
+        }
+
+        function tambahItem(id) {
+            keranjang[id] = (keranjang[id] || 0) + 1;
+            renderMenu();
+        }
+
+        function kurangItem(id) {
+            if (keranjang[id] > 0) {
+                keranjang[id]--;
+                if (keranjang[id] === 0) delete keranjang[id];
+            }
+            renderMenu();
+        }
+
+        function updateBarKeranjang() {
+            let totalItem = 0, totalPrice = 0;
+            for (let id in keranjang) {
+                totalItem += keranjang[id];
+                totalPrice += menuKafe.find(m => m.id == id).harga * keranjang[id];
+            }
+            document.getElementById('cart-count').innerText = totalItem;
+            document.getElementById('cart-total-price').innerText = `Rp ${totalPrice.toLocaleString('id-ID')}`;
+        }
+
+        function bukaModal() {
+            const nama = document.getElementById('customer-name').value.trim();
+            const meja = document.getElementById('table-number').value.trim();
+
+            if (!nama || !meja) {
+                alert("Harap isi Nama Pemesan dan Nomor Meja terlebih dahulu!");
+                return;
+            }
+
+            let totalItem = 0;
+            for (let id in keranjang) totalItem += keranjang[id];
+            if (totalItem === 0) {
+                alert("Keranjang masih kosong! Silakan pilih minimal 1 menu.");
+                return;
+            }
+
+            document.getElementById('modal-customer-info').innerHTML = `
+                <div><strong>Nama:</strong> ${nama}</div>
+                <div><strong>Nomor Meja:</strong> Meja ${meja}</div>
+            `;
+
+            const cartListContainer = document.getElementById('modal-cart-list');
+            cartListContainer.innerHTML = '';
+            let totalPrice = 0;
+
+            for (let id in keranjang) {
+                const qty = keranjang[id];
+                const item = menuKafe.find(m => m.id == id);
+                const subtotal = item.harga * qty;
+                totalPrice += subtotal;
+
+                const row = document.createElement('div');
+                row.className = 'cart-item';
+                row.innerHTML = `
+                    <div>
+                        <span><strong>${item.nama}</strong> (${qty}x)</span><br>
+                        <small style="color: #4ade80;">Rp ${subtotal.toLocaleString('id-ID')}</small>
+                    </div>
+                    <button class="btn-delete" onclick="hapusMenuModal(${item.id})">Batalkan</button>
+                `;
+                cartListContainer.appendChild(row);
+            }
+
+            document.getElementById('modal-total-price').innerText = `Rp ${totalPrice.toLocaleString('id-ID')}`;
+            document.getElementById('payment-modal').style.display = 'flex';
+        }
+
+        function hapusMenuModal(id) {
+            delete keranjang[id];
+            renderMenu();
+            let totalItem = 0;
+            for (let key in keranjang) totalItem += keranjang[key];
+            if (totalItem === 0) {
+                tutupModal();
+            } else {
+                bukaModal();
+            }
+        }
+
+        function tutupModal() {
+            document.getElementById('payment-modal').style.display = 'none';
+        }
+
+        function konfirmasiBayar() {
+            const nama = document.getElementById('customer-name').value.trim();
+            const meja = document.getElementById('table-number').value.trim();
+            const metode = document.querySelector('input[name="payment"]:checked').value;
+
+            let totalItem = 0, totalPrice = 0;
+            const now = new Date();
+            const waktu = now.toLocaleDateString('id-ID') + ' ' + now.toLocaleTimeString('id-ID');
+
+            let receiptItemsHtml = '';
+            for (let id in keranjang) {
+                const qty = keranjang[id];
+                const item = menuKafe.find(m => m.id == id);
+                const subtotal = item.harga * qty;
+                totalItem += qty;
+                totalPrice += subtotal;
+
+                receiptItemsHtml += `
+                    <tr>
+                        <td style="width:55%">${item.nama}</td>
+                        <td style="width:15%; text-align:center">${qty}x</td>
+                        <td style="width:30%; text-align:right">${subtotal.toLocaleString('id-ID')}</td>
+                    </tr>
+                `;
+            }
+
+            document.getElementById('receipt-info').innerHTML = `
+                <div>Tgl: ${waktu}</div>
+                <div>Nama: ${nama}</div>
+                <div>Meja: ${meja}</div>
+                <div>Bayar: ${metode}</div>
+            `;
+            document.getElementById('receipt-items').innerHTML = receiptItemsHtml;
+            document.getElementById('receipt-total').innerHTML = `
+                <div style="display:flex; justify-content:space-between;">
+                    <span>Total Item: ${totalItem}</span>
+                    <span>Rp ${totalPrice.toLocaleString('id-ID')}</span>
+                </div>
+            `;
+
+            window.print();
+
+            keranjang = {};
+            document.getElementById('customer-name').value = '';
+            document.getElementById('table-number').value = '';
+            renderMenu();
+            tutupModal();
+        }
+
+        renderMenu();
+    </script>
+</body>
+</html>

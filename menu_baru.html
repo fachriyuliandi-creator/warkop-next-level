@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nightfall Cafe & Lounge - Multi Order & Pembayaran</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #0b0f19; color: #f8fafc; margin: 0; padding: 20px; padding-bottom: 90px; }
+        .header { text-align: center; margin-bottom: 40px; }
+        .header h1 { color: #38bdf8; font-size: 36px; margin-bottom: 5px; }
+        .header p { color: #94a3b8; font-size: 16px; }
+        
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .card {
+            background-color: #1e293b;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid #334155;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.4);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: transform 0.2s ease;
+        }
+        .card:hover { transform: translateY(-5px); }
+        .card-img { width: 100%; height: 180px; object-fit: cover; }
+        .card-content { padding: 20px; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
+        .card h3 { margin: 0 0 8px 0; color: #f1f5f9; font-size: 20px; }
+        .badge {
+            display: inline-block; background-color: #0284c7; color: #fff;
+            padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: bold;
+            margin-bottom: 12px; text-transform: uppercase;
+        }
+        .desc { color: #94a3b8; font-size: 13px; line-height: 1.4; margin-bottom: 15px; }
+        .price-row { display: flex; align-items: center; justify-content: space-between; margin-top: auto; }
+        .price { font-weight: bold; color: #4ade80; font-size: 18px; }
+        .btn {
+            background-color: #38bdf8; color: #0f172a; border: none; padding: 8px 14px;
+            border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 13px;
+        }
+        .btn:hover { background-color: #7dd3fc; }
+
+        /* Floating Cart Bar (Bilah Keranjang Bawah) */
+        .cart-bar {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background-color: #1e293b; border-top: 1px solid #334155;
+            padding: 15px 30px; display: flex; justify-content: space-between;
+            align-items: center; box-shadow: 0 -5px 15px rgba(0,0,0,0.5); z-index: 999;
+        }
+        .cart-info { font-size: 16px; color: #f1f5f9; }
+        .cart-total { color: #4ade80; font-weight: bold; font-size: 20px; margin-left: 10px; }
+        .btn-checkout {
+            background-color: #22c55e; color: #fff; border: none; padding: 12px 24px;
+            border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer;
+        }
+        .btn-checkout:hover { background-color: #16a34a; }
+
+        /* Modal Pembayaran */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.75); display: none;
+            justify-content: center; align-items: center; z-index: 1000;
+        }
+        .modal-box {
+            background-color: #1e293b; border: 1px solid #334155; border-radius: 16px;
+            padding: 25px; width: 90%; max-width: 450px; box-shadow: 0 20px 25px rgba(0,0,0,0.5);
+            max-height: 90vh; overflow-y: auto;
+        }
+        .modal-box h2 { margin-top: 0; color: #38bdf8; border-bottom: 1px solid #334155; padding-bottom: 10px; }
+        .cart-list { margin: 15px 0; max-height: 180px; overflow-y: auto; }
+        .cart-item { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; color: #cbd5e1; }
+        .payment-methods label { display: block; margin-bottom: 8px; cursor: pointer; color: #cbd5e1; }
+        .btn-confirm {
+            background-color: #22c55e; color: #fff; width: 100%; padding: 12px;
+            border: none; border-radius: 8px; font-weight: bold; font-size: 15px;
+            cursor: pointer; margin-top: 15px;
+        }
+        .btn-cancel {
+            background-color: transparent; color: #94a3b8; width: 100%; padding: 8px;
+            border: none; cursor: pointer; margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Nightfall Cafe & Lounge</h1>
+        <p>Pilih beberapa menu favoritmu dan bayar sekaligus</p>
+    </div>
+
+    <div class="grid-container" id="menu-container"></div>
+
+    <!-- Floating Bar Keranjang -->
+    <div class="cart-bar">
+        <div class="cart-info">
+            Item Dipilih: <span id="cart-count" style="font-weight: bold; color: #38bdf8;">0</span> | Total: <span class="cart-total" id="cart-total-price">Rp 0</span>
+        </div>
+        <button class="btn-checkout" onclick="bukaModal()">Lanjut Pembayaran</button>
+    </div>
+
+    <!-- Modal Pembayaran -->
+    <div class="modal-overlay" id="payment-modal">
+        <div class="modal-box">
+            <h2>Ringkasan Pesanan</h2>
+            
+            <div class="cart-list" id="modal-cart-list"></div>
+            
+            <hr style="border-color: #334155; margin: 15px 0;">
+            <div style="display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 15px;">
+                <span>Total Bayar:</span>
+                <span id="modal-total-price" style="color: #4ade80;">Rp 0</span>
+            </div>
+
+            <div class="payment-methods">
+                <p style="margin-bottom: 8px; color: #94a3b8; font-size: 13px;">Pilih Metode Pembayaran:</p>
+                <label><input type="radio" name="payment" value="QRIS" checked> QRIS / E-Wallet</label>
+                <label><input type="radio" name="payment" value="Tunai"> Tunai di Kasir</label>
+                <label><input type="radio" name="payment" value="Kartu Debit/Kredit"> Kartu Debit / Kredit</label>
+            </div>
+
+            <button class="btn-confirm" onclick="konfirmasiBayar()">Konfirmasi Pembayaran</button>
+            <button class="btn-cancel" onclick="tutupModal()">Batal / Tambah Menu Lagi</button>
+        </div>
+    </div>
+
+    <script>
+        const menuKafe = [
+            { id: 1, nama: "Espresso Single Shot", kategori: "Coffee", harga: 20000, deskripsi: "Ekstraksi kopi murni bertubuh tebal.", gambar: "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?auto=format&fit=crop&w=500&q=80" },
+            { id: 2, nama: "Caffè Latte", kategori: "Coffee", harga: 30000, deskripsi: "Perpaduan espresso kaya rasa dengan steamed milk.", gambar: "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?auto=format&fit=crop&w=500&q=80" },
+            { id: 3, nama: "Matcha Oat Latte", kategori: "Non-Coffee", harga: 32000, deskripsi: "Matcha Uji dipadu susu gandum manis alami.", gambar: "https://images.unsplash.com/photo-1536256263959-770b48d82b0a?auto=format&fit=crop&w=500&q=80" },
+            { id: 4, nama: "Sparkling Berry Mocktail", kategori: "Mocktail", harga: 35000, deskripsi: "Sirup raspberry, jus lemon, dan soda dingin.", gambar: "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=500&q=80" },
+            { id: 5, nama: "Classic Chocolate Iced", kategori: "Non-Coffee", harga: 28000, deskripsi: "Cokelat dark belgia dengan milk foam lembut.", gambar: "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=500&q=80" },
+            { id: 6, nama: "Caramel Macchiato", kategori: "Coffee", harga: 34000, deskripsi: "Espresso segar dengan vanila dan saus karamel.", gambar: "https://images.unsplash.com/photo-1485808191679-5f865106b1a2?auto=format&fit=crop&w=500&q=80" },
+            { id: 7, nama: "Nasi Goreng Special", kategori: "Main Course", harga: 40000, deskripsi: "Nasi goreng rempah khas kafe disajikan telur dan sate.", gambar: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=500&q=80" },
+            { id: 8, nama: "Chicken Katsu Curry", kategori: "Main Course", harga: 45000, deskripsi: "Ayam katsu renyah dengan saus kari jepang gurih.", gambar: "https://images.unsplash.com/photo-1604908176997-125f2596f37c?auto=format&fit=crop&w=500&q=80" },
+            { id: 9, nama: "Chicken Wings BBQ", kategori: "Snack", harga: 30000, deskripsi: "Sayap ayam renyah berbalut saus barbekyu manis pedas.", gambar: "https://images.unsplash.com/photo-1527477396000-e27163b481c2?auto=format&fit=crop&w=500&q=80" },
+            { id: 10, nama: "French Fries Truffle", kategori: "Snack", harga: 25000, deskripsi: "Kentang goreng emas dengan minyak truffle dan keju.", gambar: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=500&q=80" }
+        ];
+
+        let keranjang = [];
+
+        const container = document.getElementById('menu-container');
+
+        menuKafe.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+                <img src="${item.gambar}" alt="${item.nama}" class="card-img">
+                <div class="card-content">
+                    <div>
+                        <span class="badge">${item.kategori}</span>
+                        <h3>${item.nama}</h3>
+                        <p class="desc">${item.deskripsi}</p>
+                    </div>
+                    <div class="price-row">
+                        <div class="price">Rp ${item.harga.toLocaleString('id-ID')}</div>
+                        <button class="btn" onclick="tambahKeKeranjang(${item.id})">+ Tambah</button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+
+        function tambahKeKeranjang(id) {
+            const item = menuKafe.find(m => m.id === id);
+            keranjang.push(item);
+            updateBarKeranjang();
+        }
+
+        function updateBarKeranjang() {
+            document.getElementById('cart-count').innerText = keranjang.length;
+            const total = keranjang.reduce((sum, item) => sum + item.harga, 0);
+            document.getElementById('cart-total-price').innerText = `Rp ${total.toLocaleString('id-ID')}`;
+        }
+
+        function bukaModal() {
+            if (keranjang.length === 0) {
+                alert("Keranjang masih kosong! Silakan pilih minimal 1 menu.");
+                return;
+            }
+
+            const cartListContainer = document.getElementById('modal-cart-list');
+            cartListContainer.innerHTML = '';
+            
+            keranjang.forEach((item, index) => {
+                const row = document.createElement('div');
+                row.className = 'cart-item';
+                row.innerHTML = `<span>${index + 1}. ${item.nama}</span> <strong>Rp ${item.harga.toLocaleString('id-ID')}</strong>`;
+                cartListContainer.appendChild(row);
+            });
+
+            const total = keranjang.reduce((sum, item) => sum + item.harga, 0);
+            document.getElementById('modal-total-price').innerText = `Rp ${total.toLocaleString('id-ID')}`;
+            document.getElementById('payment-modal').style.display = 'flex';
+        }
+
+        function tutupModal() {
+            document.getElementById('payment-modal').style.display = 'none';
+        }
+
+        function konfirmasiBayar() {
+            const metode = document.querySelector('input[name="payment"]:checked').value;
+            const total = keranjang.reduce((sum, item) => sum + item.harga, 0);
+            
+            alert(`Pembayaran Berhasil!\n\nTotal Menu: ${keranjang.length} item\nTotal Bayar: Rp ${total.toLocaleString('id-ID')}\nMetode: ${metode}\n\nPesanan Anda sedang disiapkan!`);
+            
+            keranjang = [];
+            updateBarKeranjang();
+            tutupModal();
+        }
+    </script>
+
+</body>
+</html>
